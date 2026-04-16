@@ -1,16 +1,20 @@
 import argparse
 import sqlite3
 from pathlib import Path
+
 from typing import Iterable, List
 
 import pandas as pd
 
 DEFAULT_EXCEL_PATH = Path("modem apn.xlsx")
+
 DB_PATH = Path("data/nv_knowledge.db")
 TABLE_NAME = "nv_configs"
 
 
+
 def normalize_columns(columns: Iterable[str]) -> List[str]:
+
     """Normalize messy Excel headers to stable snake_case names."""
     normalized = []
     for col in columns:
@@ -26,23 +30,29 @@ def normalize_columns(columns: Iterable[str]) -> List[str]:
 def load_excel(excel_path: Path) -> pd.DataFrame:
     """Read all sheets and merge into a single dataframe."""
     if not excel_path.exists():
+
         raise FileNotFoundError("Excel file not found: {}".format(excel_path))
 
     all_sheets = pd.read_excel(str(excel_path), sheet_name=None)
+
     frames = []
 
     for sheet_name, df in all_sheets.items():
         if df.empty:
             continue
+
         current = df.copy()
         current.columns = normalize_columns(current.columns)
         current["sheet_name"] = sheet_name
         frames.append(current)
 
+
     if not frames:
         return pd.DataFrame()
 
     merged = pd.concat(frames, ignore_index=True)
+
+
 
     alias_map = {
         "path": ["nv_path", "config_path", "parameter_path", "key"],
@@ -63,7 +73,9 @@ def load_excel(excel_path: Path) -> pd.DataFrame:
         if required not in merged.columns:
             merged[required] = ""
 
+
     return merged.fillna("")
+
 
 
 def save_to_repository(df: pd.DataFrame, db_path: Path = DB_PATH) -> None:
@@ -71,16 +83,19 @@ def save_to_repository(df: pd.DataFrame, db_path: Path = DB_PATH) -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     csv_path = db_path.parent / "nv_knowledge.csv"
 
+
     with sqlite3.connect(str(db_path)) as conn:
         df.to_sql(TABLE_NAME, conn, if_exists="replace", index=False)
 
     df.to_csv(str(csv_path), index=False, encoding="utf-8-sig")
 
 
+
 def query_nv(keyword: str, db_path: Path = DB_PATH, limit: int = 100) -> pd.DataFrame:
     """Keyword query across path/value/meaning/module columns."""
     if not db_path.exists():
         raise FileNotFoundError(
+
             "Database not found: {}. Please run import first.".format(db_path)
         )
 
@@ -100,10 +115,12 @@ def query_nv(keyword: str, db_path: Path = DB_PATH, limit: int = 100) -> pd.Data
         )
 
 
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Import modem APN/NV Excel into repository DB, then query quickly."
     )
+
     sub = parser.add_subparsers(dest="cmd")
 
     p_import = sub.add_parser("import", help="Import Excel into SQLite + CSV")
@@ -112,6 +129,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(DEFAULT_EXCEL_PATH),
         help="Path of modem apn.xlsx (default: ./modem apn.xlsx)",
     )
+
 
     p_query = sub.add_parser("query", help="Query imported NV data by keyword")
     p_query.add_argument("--keyword", required=True, help="Keyword to search")
@@ -124,9 +142,11 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
+
     if not args.cmd:
         parser.print_help()
         return
+
 
     if args.cmd == "import":
         excel_path = Path(args.excel)
@@ -135,7 +155,9 @@ def main() -> None:
             print("Excel has no valid rows.")
             return
         save_to_repository(df)
+
         print("Imported {} rows into {}".format(len(df), DB_PATH))
+
         return
 
     if args.cmd == "query":

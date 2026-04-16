@@ -4,7 +4,9 @@ import importlib.util
 import streamlit as st
 
 module_path = Path(__file__).with_name("excel data.py")
+
 spec = importlib.util.spec_from_file_location("excel_data", str(module_path))
+
 excel_data = importlib.util.module_from_spec(spec)
 assert spec and spec.loader
 spec.loader.exec_module(excel_data)
@@ -14,12 +16,15 @@ st.title("展锐平台 NV/APN 参数查询")
 
 st.markdown(
     """
+
 将仓库中的 `modem apn.xlsx` 导入本地数据库后，可通过关键字检索 `path/value/meaning/module`。
 """
 )
 
 default_excel = str(excel_data.DEFAULT_EXCEL_PATH)
 excel_path = st.text_input("Excel 路径", value=default_excel)
+=======
+
 
 col1, col2 = st.columns([1, 2])
 with col1:
@@ -30,6 +35,7 @@ with col1:
                 st.warning("Excel 没有可导入数据")
             else:
                 excel_data.save_to_repository(df)
+
                 st.success("导入完成，共 {} 行。数据库: {}".format(len(df), excel_data.DB_PATH))
         except Exception as exc:
             st.error("导入失败: {}".format(exc))
@@ -46,6 +52,7 @@ if st.button("查询"):
     else:
         try:
             result = excel_data.query_nv(keyword.strip(), limit=limit)
+
             st.write("命中 {} 条".format(len(result)))
             st.dataframe(result, use_container_width=True)
         except Exception as exc:
